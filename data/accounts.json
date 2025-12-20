@@ -1,0 +1,23 @@
+[
+    {
+        "id": "u_001",
+        "email": "admin@example.com",
+        "passwordHash": "$2a$10$u7lH7Q9fN0xgL8sQ7kq0mO8o3LQ9O5xJm7l2YvR3nVJr4wq7iJ3aW",
+        "providers": {
+            "stripe": {
+                "apiKey": "sk_test_account_001",
+                "accountId": "acct_001",
+                "extra": {
+                    "env": "test"
+                }
+            },
+            "shopify": {
+                "token": "shpat_account_001",
+                "shop": "demo-store",
+                "extra": {
+                    "version": "2024-01"
+                }
+            }
+        }
+    }
+]

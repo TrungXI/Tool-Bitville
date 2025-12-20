@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>API Test Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script>
+      const token = localStorage.getItem("token");
+      if (token) {
+        location.replace("/app");
+      } else {
+        location.replace("/login");
+      }
+    </script>
+  </body>
+</html>

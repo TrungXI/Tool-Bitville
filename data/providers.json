@@ -1,0 +1,23 @@
+{
+    "stripe": {
+        "standardMap": {
+            "authType": "bearer",
+            "authField": "apiKey",
+            "providerAccountField": "accountId"
+        },
+        "defaultHeaders": {
+            "Content-Type": "application/json"
+        }
+    },
+    "shopify": {
+        "standardMap": {
+            "authType": "x-header",
+            "authHeaderName": "X-Shopify-Access-Token",
+            "authField": "token",
+            "providerAccountField": "shop"
+        },
+        "defaultHeaders": {
+            "Content-Type": "application/json"
+        }
+    }
+}

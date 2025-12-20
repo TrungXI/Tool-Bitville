@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Login - API Test Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: ui-sans-serif, system-ui; max-width: 560px; margin: 40px auto; padding: 0 16px; }
+      h2 { margin-bottom: 8px; }
+      .hint { color: #555; margin-bottom: 16px; }
+      input, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+      button { cursor: pointer; }
+      .err { color: #b00020; min-height: 18px; }
+      .ok { color: #0a7a2f; min-height: 18px; }
+      .row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+      code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h2>API Test Tool — Login</h2>
+    <div class="hint">
+      Dùng tài khoản đã seed (nếu bạn chạy seed):<br/>
+      <code>admin@example.com</code> / <code>admin123</code>
+    </div>
+
+    <div class="err" id="err"></div>
+    <div class="ok" id="ok"></div>
+
+    <div class="row">
+      <input id="email" placeholder="Email" autocomplete="username" value="admin@example.com" />
+      <input id="password" placeholder="Password" type="password" autocomplete="current-password" value="admin123" />
+      <button id="btn">Sign in</button>
+      <button id="btnGoApp" style="display:none;">Go to App</button>
+    </div>
+
+    <script>
+      const err = document.getElementById("err");
+      const ok = document.getElementById("ok");
+      const btn = document.getElementById("btn");
+      const btnGoApp = document.getElementById("btnGoApp");
+
+      // nếu đã có token -> vào app luôn
+      const existing = localStorage.getItem("token");
+      if (existing) {
+        btnGoApp.style.display = "block";
+        btnGoApp.onclick = () => location.href = "/app";
+      }
+
+      btn.onclick = async () => {
+        err.textContent = "";
+        ok.textContent = "";
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        btn.disabled = true;
+        btn.textContent = "Signing in...";
+
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            err.textContent = data?.message || "Login failed";
+            return;
+          }
+
+          localStorage.setItem("token", data.token);
+          ok.textContent = "Login success!";
+          location.href = "/app";
+        } catch (e) {
+          err.textContent = "Network error: " + (e?.message || e);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Sign in";
+        }
+      };
+    </script>
+  </body>
+</html>
