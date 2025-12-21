@@ -11,8 +11,9 @@ export type AssertRule =
     | { type: "json_path_eq"; path: string; expected: any }
     | { type: "json_path_in"; path: string; expected: any[] }
     | { type: "json_path_exists"; path: string }
+    | { type: "json_path_contains"; path: string; expected: string } // Check if path contains expected string
     | { type: "equals_var"; var: string; expected: any }
-    | { type: "custom"; name: "debit_credit_cancel" | "non_empty"; params?: Record<string, any> };
+    | { type: "custom"; name: "debit_credit_cancel" | "non_empty" | "balance_decreased" | "error_message" | "balance_in_response" | "balance_increased"; params?: Record<string, any> };
 
 export type StepDef = {
     id: string;

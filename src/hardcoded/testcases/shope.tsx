@@ -14,8 +14,8 @@ export const SHOPE_SUITE: ProviderSuite = {
                     title: "Authenticate",
                     method: "POST",
                     url: "{{context.url}}/authenticate",
-                    headers: { SecretKey: "{{context.secretKey}}" },
-                    body: { tkn: "{{context.token}}", prid: "{{context.providerId}}" },
+                    headers: { "API-Key": "{{context.apiKey}}" },
+                    body: { merchantId: "{{context.merchantId}}", customerId: "{{context.customerId}}" },
                     assert: [
                         { type: "status_in", expected: [200] },
                         { type: "json_path_in", path: "err", expected: [0, 1] }
@@ -33,8 +33,13 @@ export const SHOPE_SUITE: ProviderSuite = {
                     title: "Create Debit",
                     method: "POST",
                     url: "{{context.url}}/debit",
-                    headers: { SecretKey: "{{context.secretKey}}" },
-                    body: { playerId: "{{context.playerId}}", amount: "{{input.amount}}" },
+                    headers: { "API-Key": "{{context.apiKey}}" },
+                    body: { 
+                        merchantId: "{{context.merchantId}}",
+                        customerId: "{{context.customerId}}",
+                        amount: "{{input.amount}}",
+                        region: "{{context.region}}"
+                    },
                     extract: [{ var: "debitId", from: "json", path: "id" }],
                     assert: [{ type: "status_in", expected: [200, 201] }]
                 },
@@ -43,7 +48,7 @@ export const SHOPE_SUITE: ProviderSuite = {
                     title: "Cancel Debit",
                     method: "POST",
                     url: "{{context.url}}/debit/{{vars.debitId}}/cancel",
-                    headers: { SecretKey: "{{context.secretKey}}" },
+                    headers: { "API-Key": "{{context.apiKey}}" },
                     dependsOn: ["debit"],
                     assert: [{ type: "status_in", expected: [200, 202] }]
                 },
@@ -52,7 +57,7 @@ export const SHOPE_SUITE: ProviderSuite = {
                     title: "Check Cancelled",
                     method: "GET",
                     url: "{{context.url}}/debit/{{vars.debitId}}",
-                    headers: { SecretKey: "{{context.secretKey}}" },
+                    headers: { "API-Key": "{{context.apiKey}}" },
                     dependsOn: ["cancel"],
                     assert: [
                         { type: "status_in", expected: [200] },
