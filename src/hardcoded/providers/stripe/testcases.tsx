@@ -1,4 +1,10 @@
-import type { ProviderSuite } from "./_types";
+import type { ProviderSuite } from "../../testcases/_types";
+
+/**
+ * Stripe Provider Test Cases
+ * 
+ * Định nghĩa các test cases cho Stripe provider
+ */
 
 export const STRIPE_SUITE: ProviderSuite = {
     provider: "stripe",
@@ -273,3 +279,4 @@ export const STRIPE_SUITE: ProviderSuite = {
         }
     ]
 };
+

@@ -1,4 +1,4 @@
-import type { AccountProviderDefaults } from "./types";
+import type { AccountProviderDefaults, AccountModel } from "./types";
 import { STRIPE_ACCOUNTS } from "./stripe";
 import { SHOPE_ACCOUNTS } from "./shope";
 
@@ -22,6 +22,7 @@ const PROVIDER_ACCOUNTS: Record<string, {
 /**
  * Build ACCOUNTS object từ provider accounts config
  * Reverse từ provider -> accounts sang account -> providers
+ * Format: { "email@example.com": { providers: { "stripe": {...}, "shope": {...} } } }
  */
 function buildAccountsObject(): Record<string, { providers: Record<string, AccountProviderDefaults> }> {
     const accountsMap: Record<string, { providers: Record<string, AccountProviderDefaults> }> = {};
@@ -51,36 +52,33 @@ function buildAccountsObject(): Record<string, { providers: Record<string, Accou
 export const ACCOUNTS = buildAccountsObject();
 
 /**
- * Helper: Check account có quyền access provider không
+ * Build Account Models
+ * 
+ * Tạo AccountModel cho mỗi account, bao gồm list providers
  */
-export function hasProviderAccess(email: string, provider: string): boolean {
-    const providerConfig = PROVIDER_ACCOUNTS[provider];
-    if (!providerConfig) return false;
-    return providerConfig.accounts.includes(email);
+function buildAccountModels(): Record<string, AccountModel> {
+    const models: Record<string, AccountModel> = {};
+
+    for (const [email, accountData] of Object.entries(ACCOUNTS)) {
+        models[email] = {
+            email,
+            providers: Object.keys(accountData.providers),
+            providerDefaults: accountData.providers
+        };
+    }
+
+    return models;
 }
 
 /**
- * Helper: Get list accounts có quyền access provider
+ * ACCOUNT_MODELS - Account models với list providers
+ * Format: { "email@example.com": { email: "...", providers: ["stripe", "shope"], providerDefaults: {...} } }
  */
-export function getAccountsForProvider(provider: string): string[] {
-    const providerConfig = PROVIDER_ACCOUNTS[provider];
-    return providerConfig?.accounts || [];
-}
+export const ACCOUNT_MODELS = buildAccountModels();
 
 /**
- * Helper: Get default values cho account + provider
+ * Helper: Get AccountModel cho email
  */
-export function getAccountProviderDefaults(email: string, provider: string): AccountProviderDefaults | undefined {
-    const providerConfig = PROVIDER_ACCOUNTS[provider];
-    if (!providerConfig) return undefined;
-    return providerConfig.defaults[email];
+export function getAccountModel(email: string): AccountModel | undefined {
+    return ACCOUNT_MODELS[email];
 }
-
-/**
- * Helper: Get all providers cho account
- */
-export function getProvidersForAccount(email: string): string[] {
-    const account = ACCOUNTS[email];
-    return account ? Object.keys(account.providers) : [];
-}
-

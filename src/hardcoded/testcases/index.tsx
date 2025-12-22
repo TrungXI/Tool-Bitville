@@ -1,11 +1,14 @@
-import { STRIPE_SUITE } from "./stripe";
-import { SHOPE_SUITE } from "./shope";
-import type { ProviderSuite } from "./_types";
+/**
+ * Test Cases Index
+ * 
+ * Re-export test suites từ providers
+ */
 
-export const TEST_SUITES: Record<string, ProviderSuite> = {
-    stripe: STRIPE_SUITE,
-    shope: SHOPE_SUITE
-};
+// Import test suites từ providers
+import { TEST_SUITES } from "../providers";
 
+// Re-export
+export { TEST_SUITES };
+
+// Re-export types
 export type { ProviderSuite, TestCaseDef, StepDef, AssertRule, ExtractRule, HttpMethod } from "./_types";
-

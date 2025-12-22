@@ -1,4 +1,10 @@
-import type { ProviderSuite } from "./_types";
+import type { ProviderSuite } from "../../testcases/_types";
+
+/**
+ * Shope Provider Test Cases
+ * 
+ * Định nghĩa các test cases cho Shope provider
+ */
 
 export const SHOPE_SUITE: ProviderSuite = {
     provider: "shope",
@@ -68,3 +74,4 @@ export const SHOPE_SUITE: ProviderSuite = {
         }
     ]
 };
+

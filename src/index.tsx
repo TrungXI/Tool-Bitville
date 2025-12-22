@@ -5,17 +5,11 @@ import { t } from "elysia";
 import bcrypt from "bcryptjs";
 import { sql } from "./db";
 import { staticPlugin } from "@elysiajs/static";
-import { TEST_SUITES } from "./hardcoded/testcases";
 import { runTestCase } from "./testRunner";
-import { PROVIDERS } from "./hardcoded/providers";
-import { ACCOUNTS } from "./hardcoded/accounts";
+import { PROVIDERS, TEST_SUITES } from "./hardcoded/providers";
+import { ACCOUNTS, getAccountModel } from "./hardcoded/accounts";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret_change_me";
-
-function nowIso() {
-    return new Date().toISOString();
-}
-
 
 const app = new Elysia()
     .use(cors())
@@ -96,7 +90,7 @@ const app = new Elysia()
     .get("/api/testcases", ({ query, email, set }) => {
         if (!email) { set.status = 401; return { ok: false, message: "Unauthorized" }; }
         const provider = String((query as any).provider ?? "");
-        const suite = TEST_SUITES[provider];
+        const suite = TEST_SUITES[provider as keyof typeof TEST_SUITES];
         if (!suite) { set.status = 400; return { ok: false, message: "Unknown provider suite" }; }
 
         // Check account has access to this provider
@@ -111,7 +105,7 @@ const app = new Elysia()
             ok: true,
             provider: suite.provider,
             title: suite.title,
-            cases: suite.cases.map(c => ({ id: c.id, title: c.title, expected: (c as any).expected ?? "" }))
+            cases: suite.cases.map((c: any) => ({ id: c.id, title: c.title, expected: (c as any).expected ?? "" }))
         };
     })
     // health
@@ -145,7 +139,7 @@ const app = new Elysia()
 
         const { provider, caseId, context, providerInput } = body;
 
-        const suite = TEST_SUITES[provider];
+        const suite = TEST_SUITES[provider as keyof typeof TEST_SUITES];
         if (!suite) { set.status = 400; return { ok: false, message: "Unknown provider suite" }; }
 
         const tc = suite.cases.find(c => c.id === caseId);
@@ -198,7 +192,7 @@ const app = new Elysia()
 
         const { provider, context, providerInput } = body;
 
-        const suite = TEST_SUITES[provider];
+        const suite = TEST_SUITES[provider as keyof typeof TEST_SUITES];
         if (!suite) { set.status = 400; return { ok: false, message: "Unknown provider suite" }; }
 
         // Check account has access to this provider
@@ -290,16 +284,21 @@ const app = new Elysia()
     )
 
     // Provider list theo account đăng nhập (file cứng)
+    // Sử dụng AccountModel để lấy list providers
     .get("/api/providers", ({ email, set }) => {
         if (!email) {
             set.status = 401;
             return { ok: false, message: "Unauthorized" };
         }
 
-        const account = ACCOUNTS[email];
-        const providerKeys = account ? Object.keys(account.providers) : [];
+        // Get AccountModel để lấy list providers
+        const accountModel = getAccountModel(email);
+        if (!accountModel) {
+            return { ok: true, providers: [] };
+        }
 
-        const providers = providerKeys
+        const account = ACCOUNTS[email];
+        const providers = accountModel.providers
             .filter((k) => Boolean(PROVIDERS[k]))
             .map((k) => {
                 const p = PROVIDERS[k];

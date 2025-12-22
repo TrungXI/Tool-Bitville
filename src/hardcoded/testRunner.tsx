@@ -3,7 +3,7 @@ import type {
     ExtractRule,
     StepDef,
     TestCaseDef
-} from "./hardcoded/testcases/_types";
+} from "./testcases/_types";
 
 export type AssertionResult = {
     passed: boolean;
@@ -151,6 +151,7 @@ function assertToMessage(rule: AssertRule, actual: any) {
 }
 
 function evalAssert(rule: AssertRule, ctx: RunnerContext, resp: { status: number; json?: any; text: string }): AssertionResult {
+    // This function always returns AssertionResult, but TypeScript needs explicit return in all paths
     const ok = (message: string): AssertionResult => ({ passed: true, message, rule });
     const fail = (message: string): AssertionResult => ({ passed: false, message, rule });
 
@@ -210,6 +211,10 @@ function evalAssert(rule: AssertRule, ctx: RunnerContext, resp: { status: number
 
             return fail(`Unknown custom rule: ${rule.name}`);
         }
+        default: {
+            // TypeScript exhaustiveness check - should never reach here
+            return fail(`Unknown assertion type: ${(rule as any).type}`);
+        }
     }
 }
 
@@ -246,14 +251,13 @@ export async function runCase(args: {
     const ctx: RunnerContext = {
         context: args.context?.context ?? {},
         input: args.context?.input ?? {},
-        vars: args.context?.vars ?? {},
-        ...args.context
+        vars: args.context?.vars ?? {}
     };
 
     const commonHeaders = args.commonHeaders ?? {};
     const map = buildIdMap(args.testCase.steps);
 
-    const pending = new Set<string>(args.testCase.steps.map((s) => s.id));
+    const pending = new Set<string>(args.testCase.steps.map((s: StepDef) => s.id));
     const finished = new Set<string>();
     const results: StepResult[] = [];
 
@@ -264,8 +268,8 @@ export async function runCase(args: {
         // collect eligible
         const eligible: StepDef[] = [];
         for (const id of pending) {
-            const step = map.get(id)!;
-            if (depsSatisfied(step, finished)) eligible.push(step);
+            const step = map.get(id);
+            if (step && depsSatisfied(step, finished)) eligible.push(step);
         }
 
         if (eligible.length === 0) {
@@ -285,7 +289,9 @@ export async function runCase(args: {
             const g = firstWithGroup.parallelGroup;
             batch = eligible.filter((s) => s.parallelGroup === g);
         } else {
-            batch = [eligible[0]];
+            const firstStep = eligible[0];
+            if (!firstStep) throw new Error("No eligible step found");
+            batch = [firstStep];
         }
 
         // execute batch
@@ -307,8 +313,8 @@ export async function runCase(args: {
                     Object.assign(ctx.vars, extracts);
 
                     // assert
-                    const assertions = (step.assert ?? []).map((rule) => evalAssert(rule, ctx, resp));
-                    const passed = assertions.every((a) => a.passed);
+                    const assertions = (step.assert ?? []).map((rule: AssertRule) => evalAssert(rule, ctx, resp));
+                    const passed = assertions.every((a: AssertionResult) => a.passed);
 
                     return {
                         id: step.id,
