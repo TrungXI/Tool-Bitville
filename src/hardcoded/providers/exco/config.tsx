@@ -20,14 +20,14 @@ import type {
 export const generateExcoFields: FieldGenerator = (input, context, vars) => {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000000);
-    
+
     // TransactionId có thể sinh tùy ý
     const transactionId = `exco_${timestamp}_${random}`;
-    
+
     // RoundId: nếu đã có từ vars (từ debit step trước), dùng lại
     // Nếu chưa có, sinh mới
     const roundId = vars.roundId || `round_${timestamp}_${random}`;
-    
+
     return {
         transactionId,
         roundId,
@@ -37,20 +37,14 @@ export const generateExcoFields: FieldGenerator = (input, context, vars) => {
 
 // Exco Provider Input Fields
 export const excoFields: ProviderField[] = [
-    { key: "amount", label: "Amount", required: true, type: "number", placeholder: "100" },
-    { key: "game", label: "Game", required: true, placeholder: "vegascaline" },
-    { key: "nativeId", label: "Native ID", required: true, placeholder: "8389" },
-    { key: "category", label: "Category", required: true, placeholder: "normal" },
-    { key: "name", label: "Name", required: true, placeholder: "main" },
-    { key: "ip", label: "IP Address", required: true, placeholder: "14.186.133.103" }
+    { key: "amount", label: "Amount", required: true, type: "number", placeholder: "5" },
+    { key: "url", label: "Url", required: true, placeholder: "https://dev-games.bitville-api.com/exco/api" },
+    { key: "token", label: "Token", required: true, placeholder: "cd8fb235-9156-45ab-9615-0eb922cd069d" },
+    { key: "playerId", label: "Player ID", required: true, placeholder: "8389" },
 ];
 
 // Exco Context Fields
-export const excoContextFields: ContextField[] = [
-    { key: "url", label: "Url", required: true, placeholder: "https://api.excommunicado.com" },
-    { key: "playerId", label: "Player Id", required: true, placeholder: "cd8fb235-9156-45ab-9615-0eb922cd069d" },
-    { key: "apiKey", label: "API Key", required: false, placeholder: "optional" }
-];
+export const excoContextFields: ContextField[] = [];
 
 // Exco Response Field Mappings
 // Response format: {"nativeId":"8389","token":"...","balance":26998167.77,"currency":"zar","brand":"bitville"}

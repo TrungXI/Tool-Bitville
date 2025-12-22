@@ -9,7 +9,7 @@ import { runTestCase } from "./testRunner";
 import { PROVIDERS, TEST_SUITES } from "./hardcoded/providers";
 import { ACCOUNTS, getAccountModel } from "./hardcoded/accounts";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret_change_me";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const app = new Elysia()
     .use(cors())
@@ -56,24 +56,24 @@ const app = new Elysia()
                 sourcemap: "inline"
                 // Don't externalize React - bundle it in
             });
-            
+
             if (!result.success) {
                 const errorMsg = result.logs.map(log => `${log.level}: ${log.message}`).join("\n");
                 console.error("Build failed:", errorMsg);
-                return new Response(`// Build failed\nconsole.error(${JSON.stringify(errorMsg)});`, { 
+                return new Response(`// Build failed\nconsole.error(${JSON.stringify(errorMsg)});`, {
                     status: 200,
                     headers: { "Content-Type": "application/javascript; charset=utf-8" }
                 });
             }
-            
+
             let output = await result.outputs[0]?.text() || "";
-            
+
             // Remove CSS import (CSS is loaded via <link> tag in HTML)
             output = output.replace(
                 /import\s+['"]\.\/app\.css['"];?/g,
                 ""
             );
-            
+
             return new Response(output, {
                 headers: {
                     "Content-Type": "application/javascript; charset=utf-8"
@@ -81,7 +81,7 @@ const app = new Elysia()
             });
         } catch (error: any) {
             console.error("Error building TSX:", error);
-            return new Response(`// Error: ${error.message}\nconsole.error(${JSON.stringify(error.message)});`, { 
+            return new Response(`// Error: ${error.message}\nconsole.error(${JSON.stringify(error.message)});`, {
                 status: 200,
                 headers: { "Content-Type": "application/javascript; charset=utf-8" }
             });
@@ -109,7 +109,10 @@ const app = new Elysia()
         };
     })
     // health
-    .get("/api/health", () => ({ ok: true }))
+    .get("/api/health", async () => {
+        const r = await sql`select now() as now`;
+        return r[0];
+    })
 
     // Register user (DB)
     .post(
@@ -171,9 +174,9 @@ const app = new Elysia()
             providerInput: providerInput
         };
 
-        const result = await runTestCase({ 
-            testCase: tc, 
-            context: testContext, 
+        const result = await runTestCase({
+            testCase: tc,
+            context: testContext,
             commonHeaders,
             responseFields,
             generateFields
@@ -225,15 +228,15 @@ const app = new Elysia()
         // Stop immediately if any test case fails
         const results = [];
         for (const tc of suite.cases) {
-            const result = await runTestCase({ 
-                testCase: tc, 
-                context: testContext, 
+            const result = await runTestCase({
+                testCase: tc,
+                context: testContext,
                 commonHeaders,
                 responseFields,
                 generateFields
             });
             results.push({ ...result, expected: (tc as any).expected ?? "" });
-            
+
             // Stop if test case failed
             if (!result.passed) {
                 break;
@@ -324,8 +327,7 @@ const app = new Elysia()
 
         return { ok: true, providers };
     })
-
-
     .listen(3000);
-
+process.on("SIGINT", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
+process.on("SIGTERM", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
 console.log(`✅ http://localhost:${app.server?.port}`);

@@ -1,10 +1,12 @@
 import "dotenv/config";
 import postgres from "postgres";
 
-export const sql = postgres({
-    host: process.env.PGHOST ?? "localhost",
-    port: Number(process.env.PGPORT ?? 5432),
-    database: process.env.PGDATABASE ?? "api_test_tool",
-    username: process.env.PGUSER ?? "app",
-    password: process.env.PGPASSWORD ?? "app"
+if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set. Please create a .env file with your Neon database URL.");
+}
+
+export const sql = postgres(process.env.DATABASE_URL, {
+    ssl: "require",
+    max: 5,
+    idle_timeout: 30,
 });

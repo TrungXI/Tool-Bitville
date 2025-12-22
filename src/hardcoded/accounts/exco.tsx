@@ -12,23 +12,17 @@ export const EXCO_ACCOUNTS = {
     accounts: [
         "admin@example.com"
     ],
-    
+
     // Default values cho từng account
     defaults: {
         "admin@example.com": {
             inputDefaults: {
-                amount: 5,
-                game: "vegascaline",
-                nativeId: "8389",
-                category: "normal",
-                name: "main",
-                ip: "14.186.133.103"
-            },
-            contextDefaults: {
                 url: "https://dev-games.bitville-api.com/exco/api",
-                playerId: "cd8fb235-9156-45ab-9615-0eb922cd069d",
-                apiKey: "api_key_exco_admin"
-            }
+                key: "909819c7cc31fa1c850373aa",
+                amount: 5,
+                playerId: "8389",
+            },
+            contextDefaults: {}
         }
     } as Record<string, AccountProviderDefaults>
 };

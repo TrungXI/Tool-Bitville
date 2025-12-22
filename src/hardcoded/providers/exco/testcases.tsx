@@ -14,20 +14,18 @@ export const EXCO_SUITE: ProviderSuite = {
     title: "Excommunicado Test Suite",
     cases: [
         {
-            id: "withdraw_deposit_flow",
-            title: "Withdraw (Debit) → Deposit (Credit) Flow",
-            expected: "Withdraw trừ tiền, Deposit cộng tiền với cùng roundId",
+            id: "get_balance_before",
+            title: "Balance Flow",
+            expected: "Get balance",
             steps: [
                 {
-                    id: "get_balance_before",
-                    title: "POST Balance Before",
+                    id: "get_balance_authenticate_before",
+                    title: "POST Authenticate Balance Before",
                     method: "POST",
-                    url: "{{context.url}}/authenticate",
-                    headers: {
-                        // "API-Key": "{{context.apiKey}}"
-                    },
+                    url: "{{input.url}}/authenticate",
+                    headers: {},
                     body: {
-                        "key": "{{context.key}}"
+                        "key": "{{input.key}}"
                     },
                     extract: [
                         { var: "balanceBefore", from: "json", path: "balance" }
@@ -41,15 +39,61 @@ export const EXCO_SUITE: ProviderSuite = {
                     id: "get_balance_before",
                     title: "POST Balance Before",
                     method: "POST",
-                    url: "{{context.url}}/balance",
-                    headers: {
-                        // "API-Key": "{{context.apiKey}}"
-                    },
+                    url: "{{input.url}}/balance",
+                    headers: {},
                     body: {
-                        "key": "{{context.nativeId}}"
+                        "key": "{{input.key}}"
                     },
                     extract: [
                         { var: "balanceBefore", from: "json", path: "balance" }
+                    ],
+                    assert: [
+                        { type: "status_in", expected: [200] },
+                        { type: "json_path_exists", path: "balance" }
+                    ]
+                }
+            ]
+        },
+        {
+            id: "withdraw_deposit_flow",
+            title: "Withdraw (Debit) → Deposit (Credit) Flow",
+            expected: "Withdraw trừ tiền, Deposit cộng tiền với cùng roundId",
+            steps: [
+                {
+                    id: "post_authenticate_balance_before",
+                    title: "POST Authenticate Balance Before",
+                    method: "POST",
+                    url: "{{input.url}}/authenticate",
+                    headers: {},
+                    body: {
+                        "key": "{{input.key}}",
+                        "operator": "bitville",
+                        "wallet": "bitville",
+                        "provider": "excommunicado",
+                        "game": "vegascaline",
+                        "ip": "14.186.133.103",
+                        "channel": "desktop"
+                    },
+                    extract: [
+                        { var: "balanceBefore", from: "json", path: "balance" }
+                    ],
+                    assert: [
+                        { type: "status_in", expected: [200] },
+                        { type: "json_path_exists", path: "balance" }
+                    ]
+                },
+                {
+                    id: "get_balance_before",
+                    title: "POST Balance Before",
+                    method: "POST",
+                    url: "{{input.url}}/balance",
+                    headers: {},
+                    body: {
+                        "key": "{{input.key}}"
+                    },
+                    extract: [
+                        { var: "balanceBefore", from: "json", path: "balance" },
+                        { var: "nativeId", from: "json", path: "nativeId" }
                     ],
                     assert: [
                         { type: "status_in", expected: [200] },
@@ -60,14 +104,13 @@ export const EXCO_SUITE: ProviderSuite = {
                     id: "withdraw",
                     title: "Withdraw (Debit) - Trừ tiền",
                     method: "POST",
-                    url: "{{context.url}}/transaction",
+                    url: "{{input.url}}/transaction",
                     headers: {
-                        "Content-Type": "application/json",
-                        // "API-Key": "{{context.apiKey}}"
+                        "Content-Type": "application/json"
                     },
                     body: {
-                        nativeId: "{{input.nativeId}}",
-                        playerId: "{{context.playerId}}",
+                        nativeId: "{{vars.nativeId}}",
+                        playerId: "{{vars.nativeId}}",
                         transactionId: "{{input.transactionId}}",
                         type: "withdraw",
                         provider: "excommunicado",
