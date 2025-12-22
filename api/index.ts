@@ -7,5 +7,8 @@
 import app from "../src/index";
 
 // Export handler for Vercel
-export default app.handle;
+// Elysia's handle method works with Vercel's request/response format
+export default async (req: Request) => {
+    return app.handle(req);
+};
 

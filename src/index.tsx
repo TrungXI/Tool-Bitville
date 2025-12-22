@@ -44,7 +44,7 @@ const app = new Elysia()
             email: String((payload as any).email ?? "")
         };
     })
-
+    .get("/api/ping", () => ({ ok: true, runtime: "bun", vercel: process.env.VERCEL ?? "0" }))
     // pages
     .get("/", async () => {
         const file = Bun.file("public/index.html");
