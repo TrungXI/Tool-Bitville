@@ -1,12 +1,10 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "bunVersion": "1.x",
-  "buildCommand": "echo 'No build needed'",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "src": "/(.*)",
+      "dest": "/api/index.ts"
     }
   ]
 }
