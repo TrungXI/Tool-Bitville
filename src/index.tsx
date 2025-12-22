@@ -352,8 +352,9 @@ export default app;
 
 // Only listen on port when running locally (not on Vercel)
 if (process.env.VERCEL !== "1" && !process.env.VERCEL_ENV) {
-    app.listen(3000);
+    const PORT = Number(process.env.PORT);
+    app.listen(PORT);
     process.on("SIGINT", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
     process.on("SIGTERM", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
-    console.log(`✅ http://localhost:${app.server?.port}`);
+    console.log(`✅ http://localhost:${PORT}`);
 }
