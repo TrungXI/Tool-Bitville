@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch src/index.tsx",
+    "dev": "bun --watch src/server.tsx",
     "start": "bun src/index.tsx",
     "build": "echo 'No build step needed for Elysia'",
     "vercel-build": "echo 'No build step needed for Elysia'"

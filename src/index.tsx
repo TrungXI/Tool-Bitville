@@ -346,15 +346,6 @@ const app = new Elysia()
 
         return { ok: true, providers };
     });
-
 // Export app for Vercel serverless function
 export default app;
 
-// Only listen on port when running locally (not on Vercel)
-if (process.env.VERCEL !== "1" && !process.env.VERCEL_ENV) {
-    const PORT = Number(process.env.PORT);
-    app.listen(PORT);
-    process.on("SIGINT", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
-    process.on("SIGTERM", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
-    console.log(`✅ http://localhost:${PORT}`);
-}
