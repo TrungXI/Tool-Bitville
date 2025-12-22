@@ -222,6 +222,7 @@ const app = new Elysia()
         };
 
         // Run all testcases sequentially (one after another)
+        // Stop immediately if any test case fails
         const results = [];
         for (const tc of suite.cases) {
             const result = await runTestCase({ 
@@ -232,6 +233,11 @@ const app = new Elysia()
                 generateFields
             });
             results.push({ ...result, expected: (tc as any).expected ?? "" });
+            
+            // Stop if test case failed
+            if (!result.passed) {
+                break;
+            }
         }
 
         const total = results.length;

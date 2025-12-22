@@ -9,6 +9,8 @@ import { stripeFields, stripeContextFields, stripeResponseFields, generateStripe
 import { STRIPE_SUITE } from "./stripe/testcases";
 import { shopeFields, shopeContextFields, shopeResponseFields, generateShopeFields } from "./shope/config";
 import { SHOPE_SUITE } from "./shope/testcases";
+import { excoFields, excoContextFields, excoResponseFields, generateExcoFields } from "./exco/config";
+import { EXCO_SUITE } from "./exco/testcases";
 
 /**
  * Global Provider Definitions
@@ -29,6 +31,14 @@ export const PROVIDERS: Record<string, ProviderDef> = {
         contextFields: shopeContextFields,
         responseFields: shopeResponseFields,
         generateFields: generateShopeFields
+    },
+    exco: {
+        key: "exco",
+        label: "Excommunicado",
+        fields: excoFields,
+        contextFields: excoContextFields,
+        responseFields: excoResponseFields,
+        generateFields: generateExcoFields
     }
 };
 
@@ -37,7 +47,8 @@ export const PROVIDERS: Record<string, ProviderDef> = {
  */
 export const TEST_SUITES = {
     stripe: STRIPE_SUITE,
-    shope: SHOPE_SUITE
+    shope: SHOPE_SUITE,
+    exco: EXCO_SUITE
 };
 
 // Re-export types

@@ -1,6 +1,7 @@
 import type { AccountProviderDefaults, AccountModel } from "./types";
 import { STRIPE_ACCOUNTS } from "./stripe";
 import { SHOPE_ACCOUNTS } from "./shope";
+import { EXCO_ACCOUNTS } from "./exco";
 
 /**
  * Provider Accounts Configuration
@@ -16,7 +17,8 @@ const PROVIDER_ACCOUNTS: Record<string, {
     defaults: Record<string, AccountProviderDefaults>;
 }> = {
     stripe: STRIPE_ACCOUNTS,
-    shope: SHOPE_ACCOUNTS
+    shope: SHOPE_ACCOUNTS,
+    exco: EXCO_ACCOUNTS
 };
 
 /**
