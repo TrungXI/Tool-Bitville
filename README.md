@@ -61,7 +61,13 @@ Tool-Bitville/
 - PostgreSQL database running
 
 ### Installation
+## Setup
 
+1. Clone repo
+2. Copy env file
+   ```bash
+   cp .env.example .env
+   
 ```bash
 # Install dependencies
 bun install
