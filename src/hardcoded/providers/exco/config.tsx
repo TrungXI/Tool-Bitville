@@ -39,7 +39,7 @@ export const generateExcoFields: FieldGenerator = (input, context, vars) => {
 export const excoFields: ProviderField[] = [
     { key: "amount", label: "Amount", required: true, type: "number", placeholder: "5" },
     { key: "url", label: "Url", required: true, placeholder: "https://dev-games.bitville-api.com/exco/api" },
-    { key: "token", label: "Token", required: true, placeholder: "cd8fb235-9156-45ab-9615-0eb922cd069d" },
+    { key: "key", label: "Key", required: true, placeholder: "909819c7cc31fa1c850373aa" },
     { key: "playerId", label: "Player ID", required: true, placeholder: "8389" },
 ];
 

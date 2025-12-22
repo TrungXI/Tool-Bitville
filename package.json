@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch src/index.tsx",
-    "start": "bun src/index.tsx"
+    "start": "bun src/index.tsx",
+    "build": "echo 'No build step needed for Elysia'",
+    "vercel-build": "echo 'No build step needed for Elysia'"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

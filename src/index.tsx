@@ -9,7 +9,11 @@ import { runTestCase } from "./testRunner";
 import { PROVIDERS, TEST_SUITES } from "./hardcoded/providers";
 import { ACCOUNTS, getAccountModel } from "./hardcoded/accounts";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
+
+if (!process.env.JWT_SECRET) {
+    console.warn("⚠️  JWT_SECRET not set, using default. Please set JWT_SECRET in production!");
+}
 
 const app = new Elysia()
     .use(cors())
@@ -42,11 +46,26 @@ const app = new Elysia()
     })
 
     // pages
-    .get("/", () => Bun.file("public/index.html"))
-    .get("/login", () => Bun.file("public/login.html"))
-    .get("/app", () => Bun.file("public/app.html"))
+    .get("/", async () => {
+        const file = Bun.file("public/index.html");
+        return new Response(await file.text(), {
+            headers: { "Content-Type": "text/html" }
+        });
+    })
+    .get("/login", async () => {
+        const file = Bun.file("public/login.html");
+        return new Response(await file.text(), {
+            headers: { "Content-Type": "text/html" }
+        });
+    })
+    .get("/app", async () => {
+        const file = Bun.file("public/app.html");
+        return new Response(await file.text(), {
+            headers: { "Content-Type": "text/html" }
+        });
+    })
     // Transpile TSX files using Bun's bundler (bundle React into output)
-    .get("/app.tsx", async () => {
+    .get("/app.tsx", async ({ set }) => {
         try {
             const result = await Bun.build({
                 entrypoints: ["public/app.tsx"],
@@ -326,8 +345,15 @@ const app = new Elysia()
             .filter((p): p is NonNullable<typeof p> => p !== null);
 
         return { ok: true, providers };
-    })
-    .listen(3000);
-process.on("SIGINT", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
-process.on("SIGTERM", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
-console.log(`✅ http://localhost:${app.server?.port}`);
+    });
+
+// Export app for Vercel serverless function
+export default app;
+
+// Only listen on port when running locally (not on Vercel)
+if (process.env.VERCEL !== "1" && !process.env.VERCEL_ENV) {
+    app.listen(3000);
+    process.on("SIGINT", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
+    process.on("SIGTERM", async () => { await sql.end({ timeout: 5 }); process.exit(0); });
+    console.log(`✅ http://localhost:${app.server?.port}`);
+}
