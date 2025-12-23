@@ -9,7 +9,12 @@ import { runTestCase } from "./testRunner";
 import { PROVIDERS, TEST_SUITES } from "./hardcoded/providers";
 import { ACCOUNTS, getAccountModel } from "./hardcoded/accounts";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+if (!process.env.JWT_SECRET) {
+    console.error("Missing required environment variable JWT_SECRET");
+    // Exit early to ensure the server doesn't start without a secret.
+    process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 const app = new Elysia()
     .use(cors())

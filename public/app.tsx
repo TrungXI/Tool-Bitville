@@ -69,7 +69,7 @@ function App() {
     const [status, setStatus] = useState("Loading...");
     const [hint, setHint] = useState("");
     const [filter, setFilter] = useState<"all" | "pass" | "fail">("all");
-
+    const [isLoading , setIsLoading] = useState(false);
     const contextInputRefs = useRef<Record<string, HTMLInputElement>>({});
     const providerInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
@@ -211,8 +211,8 @@ function App() {
     }
 
     async function handleRunAll() {
-        if (!canRun || !currentProvider) return;
-
+        if (!canRun || !currentProvider || isLoading) return;
+        setIsLoading(true);
         setStatus("Running all testcases...");
 
         const payload = {
@@ -234,6 +234,7 @@ function App() {
 
         setLastRun(data as RunAllResult);
         setStatus("Done");
+        setIsLoading(false);
     }
 
     function handleExport() {
@@ -352,7 +353,7 @@ function App() {
                     </div>
 
                     <div className="run-section">
-                        <button className="btn primary" id="runAll" disabled={!canRun} onClick={handleRunAll}>
+                        <button className="btn primary" id="runAll" disabled={!canRun || isLoading} onClick={handleRunAll}>
                             Run All
                         </button>
                         <div className="validation-hint" id="hint">{hint}</div>
