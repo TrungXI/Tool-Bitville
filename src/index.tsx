@@ -14,7 +14,38 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 if (!process.env.JWT_SECRET) {
     console.warn("⚠️  JWT_SECRET not set, using default. Please set JWT_SECRET in production!");
 }
+async function readFile(path: string): Promise<string> {
+    try {
+        // Try Bun.file first (local development)
+        if (typeof Bun !== "undefined" && Bun.file) {
+            const file = Bun.file(path);
+            if (await file.exists()) {
+                return await file.text();
+            }
+        }
 
+        // Fallback: try Node.js fs (works in Vercel with Bun runtime)
+        try {
+            const fs = await import("fs/promises");
+            const { fileURLToPath } = await import("url");
+            const { dirname, join } = await import("path");
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = dirname(__filename);
+            const fullPath = join(__dirname, "..", path);
+            return await fs.readFile(fullPath, "utf-8");
+        } catch (fsError) {
+            // If fs fails, try fetch as last resort
+            const response = await fetch(new URL(`../${path}`, import.meta.url));
+            if (response.ok) {
+                return await response.text();
+            }
+            throw new Error(`File not found: ${path}`);
+        }
+    } catch (error: any) {
+        console.error(`Error reading file ${path}:`, error);
+        throw error;
+    }
+}
 const app = new Elysia()
     .use(cors())
     .use(jwt({ name: "jwt", secret: JWT_SECRET }))
@@ -46,38 +77,7 @@ const app = new Elysia()
     })
     .get("/api/ping", () => ({ ok: true, runtime: "bun", vercel: process.env.VERCEL ?? "0" }))
     // Helper function to read files cross-platform
-    async function readFile(path: string): Promise<string> {
-        try {
-            // Try Bun.file first (local development)
-            if (typeof Bun !== "undefined" && Bun.file) {
-                const file = Bun.file(path);
-                if (await file.exists()) {
-                    return await file.text();
-                }
-            }
-            
-            // Fallback: try Node.js fs (works in Vercel with Bun runtime)
-            try {
-                const fs = await import("fs/promises");
-                const { fileURLToPath } = await import("url");
-                const { dirname, join } = await import("path");
-                const __filename = fileURLToPath(import.meta.url);
-                const __dirname = dirname(__filename);
-                const fullPath = join(__dirname, "..", path);
-                return await fs.readFile(fullPath, "utf-8");
-            } catch (fsError) {
-                // If fs fails, try fetch as last resort
-                const response = await fetch(new URL(`../${path}`, import.meta.url));
-                if (response.ok) {
-                    return await response.text();
-                }
-                throw new Error(`File not found: ${path}`);
-            }
-        } catch (error: any) {
-            console.error(`Error reading file ${path}:`, error);
-            throw error;
-        }
-    }
+
 
     // pages
     .get("/", async () => {
