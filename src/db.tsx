@@ -15,10 +15,6 @@ function getSql() {
             ssl: "require",
             max: 5,
             idle_timeout: 30,
-            connect_timeout: 10, // 10 seconds connection timeout
-            connection: {
-                application_name: "tool-bitville"
-            }
         });
     }
     

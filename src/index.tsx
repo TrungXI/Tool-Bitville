@@ -15,63 +15,45 @@ if (!process.env.JWT_SECRET) {
     console.warn("⚠️  JWT_SECRET not set, using default. Please set JWT_SECRET in production!");
 }
 async function readFile(path: string): Promise<string> {
-    // On Vercel, static files are served automatically, but if we need to read them:
-    // Use a timeout to prevent hanging
-    const timeout = 3000; // 3 seconds max
-    
     try {
-        // Try Bun.file first (local development) - fastest
+        // Try Bun.file first (local development)
         if (typeof Bun !== "undefined" && Bun.file) {
             const file = Bun.file(path);
-            const exists = await Promise.race([
-                file.exists(),
-                new Promise<boolean>((_, reject) => 
-                    setTimeout(() => reject(new Error("Timeout")), timeout)
-                )
-            ]);
-            if (exists) {
-                return await Promise.race([
-                    file.text(),
-                    new Promise<string>((_, reject) => 
-                        setTimeout(() => reject(new Error("Timeout")), timeout)
-                    )
-                ]);
+            if (await file.exists()) {
+                return await file.text();
             }
         }
 
         // Fallback: try Node.js fs (works in Vercel with Bun runtime)
-        // Use timeout to prevent hanging
-        const fs = await import("fs/promises");
-        const { fileURLToPath } = await import("url");
-        const { dirname, join } = await import("path");
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = dirname(__filename);
-        const fullPath = join(__dirname, "..", path);
-        
-        return await Promise.race([
-            fs.readFile(fullPath, "utf-8"),
-            new Promise<string>((_, reject) => 
-                setTimeout(() => reject(new Error("File read timeout")), timeout)
-            )
-        ]);
+        try {
+            const fs = await import("fs/promises");
+            const { fileURLToPath } = await import("url");
+            const { dirname, join } = await import("path");
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = dirname(__filename);
+            const fullPath = join(__dirname, "..", path);
+            return await fs.readFile(fullPath, "utf-8");
+        } catch (fsError) {
+            // If fs fails, try fetch as last resort
+            const response = await fetch(new URL(`../${path}`, import.meta.url));
+            if (response.ok) {
+                return await response.text();
+            }
+            throw new Error(`File not found: ${path}`);
+        }
     } catch (error: any) {
-        console.error(`Error reading file ${path}:`, error.message);
-        // Return a simple error page instead of throwing
-        throw new Error(`File not found: ${path}`);
+        console.error(`Error reading file ${path}:`, error);
+        throw error;
     }
 }
 const app = new Elysia()
     .use(cors())
     .use(jwt({ name: "jwt", secret: JWT_SECRET }))
-    // Only use staticPlugin in local development
-    // Vercel serves static files automatically, no need for staticPlugin
     .use(
-        process.env.VERCEL === "1" 
-            ? new Elysia() // No-op plugin on Vercel
-            : staticPlugin({
-                assets: "public",
-                prefix: "/"
-            })
+        staticPlugin({
+            assets: "public",
+            prefix: "/"
+        })
     )
 
     // Auth derive: lấy userId + email từ JWT
