@@ -45,59 +45,122 @@ const app = new Elysia()
         };
     })
     .get("/api/ping", () => ({ ok: true, runtime: "bun", vercel: process.env.VERCEL ?? "0" }))
+    // Helper function to read files cross-platform
+    async function readFile(path: string): Promise<string> {
+        try {
+            // Try Bun.file first (local development)
+            if (typeof Bun !== "undefined" && Bun.file) {
+                const file = Bun.file(path);
+                if (await file.exists()) {
+                    return await file.text();
+                }
+            }
+            
+            // Fallback: try Node.js fs (works in Vercel with Bun runtime)
+            try {
+                const fs = await import("fs/promises");
+                const { fileURLToPath } = await import("url");
+                const { dirname, join } = await import("path");
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = dirname(__filename);
+                const fullPath = join(__dirname, "..", path);
+                return await fs.readFile(fullPath, "utf-8");
+            } catch (fsError) {
+                // If fs fails, try fetch as last resort
+                const response = await fetch(new URL(`../${path}`, import.meta.url));
+                if (response.ok) {
+                    return await response.text();
+                }
+                throw new Error(`File not found: ${path}`);
+            }
+        } catch (error: any) {
+            console.error(`Error reading file ${path}:`, error);
+            throw error;
+        }
+    }
+
     // pages
     .get("/", async () => {
-        const file = Bun.file("public/index.html");
-        return new Response(await file.text(), {
-            headers: { "Content-Type": "text/html" }
-        });
+        try {
+            const content = await readFile("public/index.html");
+            return new Response(content, {
+                headers: { "Content-Type": "text/html" }
+            });
+        } catch (error: any) {
+            console.error("Error reading index.html:", error);
+            return new Response("Not Found", { status: 404 });
+        }
     })
     .get("/login", async () => {
-        const file = Bun.file("public/login.html");
-        return new Response(await file.text(), {
-            headers: { "Content-Type": "text/html" }
-        });
+        try {
+            const content = await readFile("public/login.html");
+            return new Response(content, {
+                headers: { "Content-Type": "text/html" }
+            });
+        } catch (error: any) {
+            console.error("Error reading login.html:", error);
+            return new Response("Not Found", { status: 404 });
+        }
     })
     .get("/app", async () => {
-        const file = Bun.file("public/app.html");
-        return new Response(await file.text(), {
-            headers: { "Content-Type": "text/html" }
-        });
+        try {
+            const content = await readFile("public/app.html");
+            return new Response(content, {
+                headers: { "Content-Type": "text/html" }
+            });
+        } catch (error: any) {
+            console.error("Error reading app.html:", error);
+            return new Response("Not Found", { status: 404 });
+        }
     })
-    // Transpile TSX files using Bun's bundler (bundle React into output)
+    // Transpile TSX files - use Bun.build locally, pre-built bundle on Vercel
     .get("/app.tsx", async ({ set }) => {
         try {
-            const result = await Bun.build({
-                entrypoints: ["public/app.tsx"],
-                target: "browser",
-                format: "esm",
-                minify: false,
-                sourcemap: "inline"
-                // Don't externalize React - bundle it in
-            });
-
-            if (!result.success) {
-                const errorMsg = result.logs.map(log => `${log.level}: ${log.message}`).join("\n");
-                console.error("Build failed:", errorMsg);
-                return new Response(`// Build failed\nconsole.error(${JSON.stringify(errorMsg)});`, {
-                    status: 200,
-                    headers: { "Content-Type": "application/javascript; charset=utf-8" }
+            // On Vercel, we should use a pre-built bundle
+            // For now, try Bun.build if available, otherwise return error
+            if (typeof Bun !== "undefined" && Bun.build) {
+                const result = await Bun.build({
+                    entrypoints: ["public/app.tsx"],
+                    target: "browser",
+                    format: "esm",
+                    minify: false,
+                    sourcemap: "inline"
                 });
-            }
 
-            let output = await result.outputs[0]?.text() || "";
-
-            // Remove CSS import (CSS is loaded via <link> tag in HTML)
-            output = output.replace(
-                /import\s+['"]\.\/app\.css['"];?/g,
-                ""
-            );
-
-            return new Response(output, {
-                headers: {
-                    "Content-Type": "application/javascript; charset=utf-8"
+                if (!result.success) {
+                    const errorMsg = result.logs.map(log => `${log.level}: ${log.message}`).join("\n");
+                    console.error("Build failed:", errorMsg);
+                    return new Response(`// Build failed\nconsole.error(${JSON.stringify(errorMsg)});`, {
+                        status: 200,
+                        headers: { "Content-Type": "application/javascript; charset=utf-8" }
+                    });
                 }
-            });
+
+                let output = await result.outputs[0]?.text() || "";
+
+                // Remove CSS import (CSS is loaded via <link> tag in HTML)
+                output = output.replace(
+                    /import\s+['"]\.\/app\.css['"];?/g,
+                    ""
+                );
+
+                return new Response(output, {
+                    headers: {
+                        "Content-Type": "application/javascript; charset=utf-8"
+                    }
+                });
+            } else {
+                // Vercel: try to read pre-built file or return error
+                return new Response(
+                    `// Error: Bun.build not available in serverless environment\n` +
+                    `// Please pre-build app.tsx or use a different bundling strategy\n` +
+                    `console.error("TSX transpilation not available in serverless environment");`,
+                    {
+                        status: 200,
+                        headers: { "Content-Type": "application/javascript; charset=utf-8" }
+                    }
+                );
+            }
         } catch (error: any) {
             console.error("Error building TSX:", error);
             return new Response(`// Error: ${error.message}\nconsole.error(${JSON.stringify(error.message)});`, {
