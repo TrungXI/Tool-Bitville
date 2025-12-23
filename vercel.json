@@ -1,10 +1,6 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.ts": {
-      "runtime": "bun@1.0.0"
-    }
-  },
+  "bunVersion": "1.x",
   "rewrites": [
     {
       "source": "/api/(.*)",
