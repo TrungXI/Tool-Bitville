@@ -54,6 +54,12 @@ type RunAllResult = {
     results: CaseRunResult[];
 };
 
+type TestCaseMeta = {
+    id: string;
+    title: string;
+    expected?: string;
+};
+
 function App() {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token && typeof window !== "undefined") {
@@ -70,6 +76,8 @@ function App() {
     const [hint, setHint] = useState("");
     const [filter, setFilter] = useState<"all" | "pass" | "fail">("all");
     const [isLoading , setIsLoading] = useState(false);
+    const [runningCaseId, setRunningCaseId] = useState<string | null>(null);
+    const [testCasesMeta, setTestCasesMeta] = useState<TestCaseMeta[]>([]);
     const contextInputRefs = useRef<Record<string, HTMLInputElement>>({});
     const providerInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
@@ -148,6 +156,9 @@ function App() {
             const firstProvider = loadedProviders[0];
             setCurrentProvider(firstProvider);
             
+            // Load test cases metadata
+            loadTestCases(firstProvider.key);
+            
             // Load defaults
             if (firstProvider.defaults) {
                 const newProviderInput: Record<string, any> = {};
@@ -172,12 +183,25 @@ function App() {
         loadProviders();
     }, []);
 
+    async function loadTestCases(providerKey: string) {
+        const { res, data } = await api(`/api/testcases?provider=${providerKey}`);
+        if (res.ok && data.ok) {
+            setTestCasesMeta(data.cases || []);
+        } else {
+            setTestCasesMeta([]);
+        }
+    }
+
     function handleProviderChange(e: React.ChangeEvent<HTMLSelectElement>) {
         const provider = providers.find((p) => p.key === (e.target as HTMLSelectElement).value);
         setCurrentProvider(provider || null);
         setLastRun(null);
+        setTestCasesMeta([]);
 
         if (provider) {
+            // Load test cases metadata
+            loadTestCases(provider.key);
+
             // Load defaults
             const newProviderInput: Record<string, any> = {};
             provider.fields.forEach((f) => {
@@ -214,6 +238,8 @@ function App() {
         if (!canRun || !currentProvider || isLoading) return;
         setIsLoading(true);
         setStatus("Running all testcases...");
+        setRunningCaseId(null);
+        setLastRun(null);
 
         const payload = {
             provider: currentProvider.key,
@@ -221,20 +247,107 @@ function App() {
             providerInput,
         };
 
-        const { res, data } = await api("/api/run-all", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-            setStatus("Run failed");
-            return;
+        // Ensure test cases metadata is loaded
+        if (testCasesMeta.length === 0) {
+            await loadTestCases(currentProvider.key);
         }
 
-        setLastRun(data as RunAllResult);
-        setStatus("Done");
-        setIsLoading(false);
+        // Initialize results structure with placeholder cases
+        const currentMeta = testCasesMeta.length > 0 ? testCasesMeta : [];
+        const initialResults: CaseRunResult[] = currentMeta.map(tc => ({
+            caseId: tc.id,
+            title: tc.title,
+            passed: false,
+            expected: tc.expected,
+            steps: []
+        }));
+        const initialSummary = { total: currentMeta.length, passed: 0, failed: 0 };
+        setLastRun({ ok: true, summary: initialSummary, results: initialResults });
+
+        try {
+            const response = await fetch("/api/run-all-stream", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                setStatus("Run failed");
+                setIsLoading(false);
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                setStatus("Failed to start stream");
+                setIsLoading(false);
+                return;
+            }
+
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        try {
+                            const { type, data } = JSON.parse(line.slice(6));
+
+                            if (type === "start") {
+                                setStatus(`Running ${data.total} testcases...`);
+                            } else if (type === "running") {
+                                setRunningCaseId(data.caseId);
+                                setStatus(`Running: ${data.title}...`);
+                            } else if (type === "completed") {
+                                setRunningCaseId(null);
+                                setLastRun((prev) => {
+                                    if (!prev) return prev;
+                                    const newResults = [...prev.results];
+                                    const index = newResults.findIndex(r => r.caseId === data.result.caseId);
+                                    if (index >= 0) {
+                                        // Replace existing case
+                                        newResults[index] = data.result;
+                                    } else {
+                                        // Add new case if not found (shouldn't happen but just in case)
+                                        newResults.push(data.result);
+                                    }
+                                    return {
+                                        ...prev,
+                                        summary: data.summary,
+                                        results: newResults,
+                                    };
+                                });
+                            } else if (type === "end") {
+                                setStatus("Done");
+                                setRunningCaseId(null);
+                                setIsLoading(false);
+                            } else if (type === "error") {
+                                setStatus(`Error: ${data.message}`);
+                                setRunningCaseId(null);
+                                setIsLoading(false);
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse SSE message:", e);
+                        }
+                    }
+                }
+            }
+        } catch (error: any) {
+            setStatus(`Error: ${error?.message || String(error)}`);
+            setIsLoading(false);
+            setRunningCaseId(null);
+        }
     }
 
     function handleExport() {
@@ -396,7 +509,11 @@ function App() {
 
                     <div id="results">
                         {filteredResults.map((cr) => (
-                            <CaseCard key={cr.caseId} caseRun={cr} />
+                            <CaseCard 
+                                key={cr.caseId} 
+                                caseRun={cr} 
+                                isRunning={runningCaseId === cr.caseId}
+                            />
                         ))}
                     </div>
                 </div>
@@ -405,14 +522,17 @@ function App() {
     );
 }
 
-function CaseCard({ caseRun }: { caseRun: CaseRunResult }) {
+function CaseCard({ caseRun, isRunning }: { caseRun: CaseRunResult; isRunning?: boolean }) {
     const [expanded, setExpanded] = useState(false);
 
     return (
-        <div className="case-card">
+        <div className={`case-card ${isRunning ? "running" : ""}`}>
             <div className="case-head" onClick={() => setExpanded(!expanded)}>
                 <div className="case-head-left">
-                    <h4>{caseRun.title}</h4>
+                    <h4>
+                        {caseRun.title}
+                        {isRunning && <span className="loading-indicator">⏳ Running...</span>}
+                    </h4>
                     {caseRun.message && (
                         <div className="case-msg">
                             Expected: {caseRun.expected || "N/A"} / Actual: {caseRun.message}
@@ -420,9 +540,13 @@ function CaseCard({ caseRun }: { caseRun: CaseRunResult }) {
                     )}
                 </div>
                 <div>
-                    <span className={`badge ${caseRun.passed ? "pass" : "fail"}`}>
-                        {caseRun.passed ? "PASS" : "FAIL"}
-                    </span>
+                    {isRunning ? (
+                        <span className="badge running">RUNNING</span>
+                    ) : (
+                        <span className={`badge ${caseRun.passed ? "pass" : "fail"}`}>
+                            {caseRun.passed ? "PASS" : "FAIL"}
+                        </span>
+                    )}
                 </div>
             </div>
             {expanded && (

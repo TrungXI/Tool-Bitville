@@ -195,6 +195,118 @@ const app = new Elysia()
             providerInput: t.Record(t.String(), t.Any())
         })
     })
+    .post("/api/run-all-stream", async ({ body, email, set }) => {
+        if (!email) { set.status = 401; return { ok: false, message: "Unauthorized" }; }
+
+        const { provider, context, providerInput } = body;
+
+        const suite = TEST_SUITES[provider as keyof typeof TEST_SUITES];
+        if (!suite) { set.status = 400; return { ok: false, message: "Unknown provider suite" }; }
+
+        // Check account has access to this provider
+        const account = ACCOUNTS[email];
+        if (!account?.providers[provider]) {
+            set.status = 403;
+            return { ok: false, message: "Provider not enabled for this account" };
+        }
+
+        // Common headers - using SecretKey from context
+        const commonHeaders: Record<string, string> = {
+            "Content-Type": "application/json"
+        };
+        if (context.secretKey) {
+            commonHeaders["SecretKey"] = context.secretKey;
+        }
+
+        // Get provider config for response field mappings and field generator
+        const providerDef = PROVIDERS[provider];
+        const responseFields = providerDef?.responseFields;
+        const generateFields = providerDef?.generateFields;
+
+        // Build context structure for testRunner
+        const testContext = {
+            context: context,
+            providerInput: providerInput
+        };
+
+        // Create SSE stream
+        const stream = new ReadableStream({
+            async start(controller) {
+                const encoder = new TextEncoder();
+                const send = (type: string, data: any) => {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, data })}\n\n`));
+                };
+
+                const results: any[] = [];
+                let total = 0;
+                let passed = 0;
+                let failed = 0;
+
+                try {
+                    // Send start event
+                    send("start", { total: suite.cases.length });
+
+                    // Run all testcases sequentially (one after another)
+                    for (const tc of suite.cases) {
+                        // Send running event
+                        send("running", { caseId: tc.id, title: tc.title });
+
+                        const result = await runTestCase({
+                            testCase: tc,
+                            context: testContext,
+                            commonHeaders,
+                            responseFields,
+                            generateFields
+                        });
+
+                        const caseResult = { ...result, expected: (tc as any).expected ?? "" };
+                        results.push(caseResult);
+                        total++;
+                        if (result.passed) {
+                            passed++;
+                        } else {
+                            failed++;
+                        }
+
+                        // Send completed event
+                        send("completed", {
+                            result: caseResult,
+                            summary: { total, passed, failed }
+                        });
+
+                        // Stop if test case failed
+                        if (!result.passed) {
+                            break;
+                        }
+                    }
+
+                    // Send end event
+                    send("end", {
+                        summary: { total, passed, failed },
+                        results
+                    });
+                } catch (error: any) {
+                    send("error", { message: error?.message || String(error) });
+                } finally {
+                    controller.close();
+                }
+            }
+        });
+
+        return new Response(stream, {
+            headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
+            }
+        });
+    }, {
+        body: t.Object({
+            provider: t.String(),
+            context: t.Record(t.String(), t.Any()),
+            providerInput: t.Record(t.String(), t.Any())
+        })
+    })
     .post("/api/run-all", async ({ body, email, set }) => {
         if (!email) { set.status = 401; return { ok: false, message: "Unauthorized" }; }
 

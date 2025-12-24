@@ -287,6 +287,11 @@ select.filter {
     overflow: hidden;
 }
 
+.case-card.running {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
 .case-head {
     padding: 16px 20px;
     display: flex;
@@ -328,6 +333,30 @@ select.filter {
 .badge.fail {
     background: #ffebee;
     color: #c62828;
+}
+
+.badge.running {
+    background: #e3f2fd;
+    color: #1976d2;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.loading-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 13px;
+    color: #1976d2;
+    font-weight: normal;
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 .case-body {
