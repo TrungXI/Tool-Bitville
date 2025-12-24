@@ -27,8 +27,9 @@ export const generateExcoFields: FieldGenerator = (input, context, vars) => {
     // RoundId: nếu đã có từ vars (từ debit step trước), dùng lại
     // Nếu chưa có, sinh mới
     const roundId = vars.roundId || `round_${timestamp}_${random}`;
-
+    const freespinId = input.freespinId || `freespin_${timestamp}_${random}`;
     return {
+        freespinId,
         transactionId,
         roundId,
         timestamp: new Date().toISOString()
@@ -39,8 +40,13 @@ export const generateExcoFields: FieldGenerator = (input, context, vars) => {
 export const excoFields: ProviderField[] = [
     { key: "amount", label: "Amount", required: true, type: "number", placeholder: "5" },
     { key: "url", label: "Url", required: true, placeholder: "https://dev-games.bitville-api.com/exco/api" },
-    { key: "key", label: "Key", required: true, placeholder: "909819c7cc31fa1c850373aa" },
+    { key: "token", label: "Token", required: true, placeholder: "909819c7cc31fa1c850373aa" },
     { key: "playerId", label: "Player ID", required: true, placeholder: "8389" },
+    { key: "freespinId", label: "Free Spin ID", required: false, placeholder: "" },
+    { key: "wallet", label: "Wallet", required: false, placeholder: "bitville" },
+    { key: "operator", label: "Operator", required: false, placeholder: "bitville" },
+    { key: "brand", label: "Brand", required: false, placeholder: "bitville" },
+    { key: "secret_key", label: "Secret Key", required: false, placeholder: "secret-bitville" },
 ];
 
 // Exco Context Fields

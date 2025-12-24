@@ -68,13 +68,22 @@ async function httpCall(method: string, url: string, headers: Record<string, str
     };
 }
 
-function applyExtract(extracts: ExtractRule[] | undefined, resp: { text: string; json?: any }) {
+function applyExtract(extracts: ExtractRule[] | undefined, resp: { text: string; json?: any }, ctx?: Record<string, any>) {
     const out: Record<string, any> = {};
     if (!extracts?.length) return out;
 
     for (const ex of extracts) {
-        if (ex.from === "text") out[ex.var] = resp.text;
-        else if (ex.from === "json") out[ex.var] = ex.path ? deepGet(resp.json, ex.path) : resp.json;
+        if (ex.from === "text") {
+            out[ex.var] = resp.text;
+        } else if (ex.from === "json") {
+            out[ex.var] = ex.path ? deepGet(resp.json, ex.path) : resp.json;
+        } else if (ex.from === "input" && ctx) {
+            out[ex.var] = ex.path ? deepGet(ctx.input, ex.path) : ctx.input;
+        } else if (ex.from === "context" && ctx) {
+            out[ex.var] = ex.path ? deepGet(ctx.context, ex.path) : ctx.context;
+        } else if (ex.from === "vars" && ctx) {
+            out[ex.var] = ex.path ? deepGet(ctx.vars, ex.path) : ctx.vars;
+        }
     }
     return out;
 }
@@ -134,6 +143,14 @@ function evalAssert(
             return actual === rule.expected
                 ? pass()
                 : fail(`var ${rule.var} expected=${JSON.stringify(rule.expected)} actual=${JSON.stringify(actual)}`);
+        }
+
+        case "json_path_equals_var": {
+            const jsonValue = deepGet(resp.json, rule.path);
+            const varValue = ctx.vars?.[rule.var];
+            return jsonValue === varValue
+                ? pass()
+                : fail(`json path ${rule.path} (${JSON.stringify(jsonValue)}) != var ${rule.var} (${JSON.stringify(varValue)})`);
         }
 
         case "custom": {
@@ -344,7 +361,7 @@ export async function runTestCase(args: {
                 const req = { method: stepDef.method, url, headers: mergedHeaders, body };
                 try {
                     const resp = await httpCall(stepDef.method, url, mergedHeaders, body);
-                    const extracted = applyExtract(stepDef.extract, resp);
+                    const extracted = applyExtract(stepDef.extract, resp, ctx);
 
                     // merge extracted vars into ctx.vars namespace
                     Object.assign(ctx.vars, extracted);

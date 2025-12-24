@@ -18,9 +18,14 @@ export const EXCO_ACCOUNTS = {
         "admin@example.com": {
             inputDefaults: {
                 url: "https://dev-games.bitville-api.com/exco/api",
-                key: "909819c7cc31fa1c850373aa",
+                token: "909819c7cc31fa1c850373aa",
                 amount: 5,
                 playerId: "8389",
+                wallet: "bitville",
+                operator: "bitville",
+                brand: "bitville",
+                secret_key: "secret-bitville",
+                freespinId: "d6796dc87b71291d32bb16f5b024c5b1"
             },
             contextDefaults: {}
         }

@@ -16,9 +16,9 @@ const PROVIDER_ACCOUNTS: Record<string, {
     accounts: string[];
     defaults: Record<string, AccountProviderDefaults>;
 }> = {
-    stripe: STRIPE_ACCOUNTS,
-    shope: SHOPE_ACCOUNTS,
-    exco: EXCO_ACCOUNTS
+    exco: EXCO_ACCOUNTS,
+    // stripe: STRIPE_ACCOUNTS,
+    // shope: SHOPE_ACCOUNTS,
 };
 
 /**
@@ -39,7 +39,7 @@ function buildAccountsObject(): Record<string, { providers: Record<string, Accou
             }
 
             // Add provider với defaults cho account này
-            accountsMap[accountEmail].providers[providerKey] = 
+            accountsMap[accountEmail].providers[providerKey] =
                 providerConfig.defaults[accountEmail] || {};
         }
     }

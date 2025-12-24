@@ -2,8 +2,8 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ExtractRule = {
     var: string;
-    from: "json" | "text";
-    path?: string; // json dot path
+    from: "json" | "text" | "input" | "context" | "vars";
+    path?: string; // json dot path or dot path for input/context/vars
 };
 
 export type AssertRule =
@@ -13,6 +13,7 @@ export type AssertRule =
     | { type: "json_path_exists"; path: string }
     | { type: "json_path_contains"; path: string; expected: string } // Check if path contains expected string
     | { type: "equals_var"; var: string; expected: any }
+    | { type: "json_path_equals_var"; path: string; var: string } // Compare json path value with a variable from ctx.vars
     | { type: "custom"; name: "debit_credit_cancel" | "non_empty" | "balance_decreased" | "error_message" | "balance_in_response" | "balance_increased"; params?: Record<string, any> };
 
 export type StepDef = {
