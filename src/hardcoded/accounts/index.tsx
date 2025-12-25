@@ -2,6 +2,7 @@ import type { AccountProviderDefaults, AccountModel } from "./types";
 import { STRIPE_ACCOUNTS } from "./stripe";
 import { SHOPE_ACCOUNTS } from "./shope";
 import { EXCO_ACCOUNTS } from "./exco";
+import { BLACKLAGOON_ACCOUNTS } from "./blacklagoon";
 
 /**
  * Provider Accounts Configuration
@@ -16,6 +17,7 @@ const PROVIDER_ACCOUNTS: Record<string, {
     accounts: string[];
     defaults: Record<string, AccountProviderDefaults>;
 }> = {
+    blacklagoon: BLACKLAGOON_ACCOUNTS,
     exco: EXCO_ACCOUNTS,
     // stripe: STRIPE_ACCOUNTS,
     // shope: SHOPE_ACCOUNTS,

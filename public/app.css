@@ -93,7 +93,7 @@ body {
     min-height: 0;
 }
 
-.left-panel-content > .field:first-of-type {
+.left-panel-content>.field:first-of-type {
     flex-shrink: 0;
 }
 
@@ -345,6 +345,7 @@ select.filter {
     0%, 100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.7;
     }
@@ -376,7 +377,7 @@ select.filter {
 }
 
 .step:first-child {
-    margin-top: 0;
+    margin-top: 8px;
     padding-top: 0;
     border-top: none;
 }
@@ -466,4 +467,3 @@ pre {
     margin-bottom: 12px;
     font-weight: 600;
 }
-
